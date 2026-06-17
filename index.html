@@ -114,10 +114,9 @@
 
         .match-row {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr auto;
             align-items: center;
             gap: 0.5rem;
-            position: relative;
         }
 
         .team-home {
@@ -154,10 +153,8 @@
             font-size: 0.7rem;
             font-weight: 700;
             white-space: nowrap;
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
+            grid-column: 4;
+            justify-self: start;
         }
 
         .score-badge.real {
@@ -247,6 +244,24 @@
             .team-home,
             .team-away {
                 font-size: 0.85rem;
+            }
+
+            .match-row {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 0.35rem;
+            }
+
+            .score-badge {
+                grid-column: 1 / -1;
+                justify-self: center;
+                margin-top: 0.25rem;
+                font-size: 0.65rem;
+                padding: 0.1rem 0.4rem;
+            }
+
+            .score {
+                padding: 0.25rem 0.5rem;
+                font-size: 1rem;
             }
         }
     </style>
@@ -724,7 +739,6 @@
             if (badgeEl) badgeEl.remove();
             badgeEl = document.createElement('span');
             badgeEl.className = 'score-badge ' + (prediction === actual ? 'correct' : 'real');
-            badgeEl.style.gridColumn = '4';
             badgeEl.textContent = actual;
             row.appendChild(badgeEl);
         }
@@ -734,11 +748,11 @@
             for (let d = 11; d <= 27; d++) {
                 dates.push('202606' + String(d).padStart(2, '0'));
             }
-            for (const dateStr of dates) {
+            await Promise.all(dates.map(async (dateStr) => {
                 try {
                     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=' + dateStr);
                     const data = await res.json();
-                    if (!data.events) continue;
+                    if (!data.events) return;
                     data.events.forEach(event => {
                         const comp = event.competitions[0];
                         if (!comp || !comp.status.type.completed) return;
@@ -762,7 +776,7 @@
                         });
                     });
                 } catch (e) { }
-            }
+            }));
         }
 
         updateMatchStatus();
