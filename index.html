@@ -63,6 +63,79 @@
             border-bottom: 2px dashed #2563eb;
         }
 
+        .global-date-filter {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            padding: 1rem 1.5rem;
+            background: #1e293b;
+            border: 1px dashed #1e3a5f;
+            border-radius: 12px;
+            max-width: 900px;
+        }
+
+        .global-date-filter label {
+            font-size: 0.95rem;
+            color: #93c5fd;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .global-date-filter input[type="date"] {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #2563eb;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            flex-grow: 1;
+            max-width: 200px;
+        }
+
+        .global-date-filter input[type="date"]:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+        }
+
+        .global-date-filter input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8);
+            cursor: pointer;
+        }
+
+        .global-date-filter .clear-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .global-date-filter .clear-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #f87171;
+        }
+
+        .match-wrapper.hidden {
+            display: none;
+        }
+
+        .group.hidden-group {
+            display: none;
+        }
+
+        .group.hidden-group {
+            display: none;
+        }
+
         .match-wrapper {
             padding: 0.75rem 1.5rem;
             border-bottom: 1px dashed #1e3a5f;
@@ -271,6 +344,11 @@
     <div class="container">
         <h1>MUNDIAL 2026</h1>
         <p class="subtitle">Predicciones - Fase de Grupos</p>
+        <div class="global-date-filter">
+            <label for="global-date-filter">Filtrar por fecha:</label>
+            <input type="date" id="global-date-filter">
+            <button type="button" class="clear-btn" id="clear-date-filter">Limpiar filtro</button>
+        </div>
         <!-- GRUPO A -->
         <div class="group">
             <div class="group-header">GRUPO A</div>
@@ -783,6 +861,71 @@
         fetchScores();
         setInterval(updateMatchStatus, 60000);
         setInterval(fetchScores, 300000);
+
+        function parseMatchDate(metaText) {
+            const dateMatch = metaText.match(/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2})/);
+            if (!dateMatch) return null;
+            const now = new Date();
+            return new Date(now.getFullYear(), parseInt(dateMatch[2]) - 1, parseInt(dateMatch[1]));
+        }
+
+        function filterMatchesByDate(selectedDate) {
+            const groups = document.querySelectorAll('.group');
+            let anyVisible = false;
+            groups.forEach(group => {
+                const matches = group.querySelectorAll('.match-wrapper');
+                let groupHasVisible = false;
+                matches.forEach(match => {
+                    const meta = match.querySelector('.match-meta');
+                    if (!meta) return;
+                    const matchDate = parseMatchDate(meta.textContent);
+                    if (!matchDate) return;
+                    const matchDateStr = matchDate.toISOString().split('T')[0];
+                    if (!selectedDate || matchDateStr === selectedDate) {
+                        match.classList.remove('hidden');
+                        groupHasVisible = true;
+                    } else {
+                        match.classList.add('hidden');
+                    }
+                });
+                if (groupHasVisible) {
+                    group.classList.remove('hidden-group');
+                    anyVisible = true;
+                } else {
+                    group.classList.add('hidden-group');
+                }
+            });
+            if (!anyVisible && selectedDate) {
+                const noMatchesMsg = document.getElementById('no-matches-msg');
+                if (!noMatchesMsg) {
+                    const msg = document.createElement('div');
+                    msg.id = 'no-matches-msg';
+                    msg.style.cssText = 'text-align:center;padding:2rem;color:#64748b;font-size:1.1rem;';
+                    msg.textContent = 'No hay partidos para esta fecha';
+                    document.querySelector('.container').appendChild(msg);
+                }
+            } else {
+                const noMatchesMsg = document.getElementById('no-matches-msg');
+                if (noMatchesMsg) noMatchesMsg.remove();
+            }
+        }
+
+        const globalDateFilter = document.getElementById('global-date-filter');
+        const clearDateFilter = document.getElementById('clear-date-filter');
+
+        const today = new Date().toISOString().split('T')[0];
+        globalDateFilter.value = today;
+        filterMatchesByDate(today);
+
+        globalDateFilter.addEventListener('change', (e) => {
+            const selectedDate = e.target.value || null;
+            filterMatchesByDate(selectedDate);
+        });
+
+        clearDateFilter.addEventListener('click', () => {
+            globalDateFilter.value = '';
+            filterMatchesByDate(null);
+        });
     </script>
 </body>
 
